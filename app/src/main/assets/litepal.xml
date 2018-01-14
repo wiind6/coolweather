@@ -3,9 +3,9 @@
     <dbname value="cool_weather"/>
     <version value="1"/>
     <list>
-        <mapping class="come.example.android.db.Province"/>
-        <mapping class="come.example.android.db.City"/>
-        <mapping class="come.example.android.db.County"/>
+        <mapping class="com.exampl.android.db.Province"/>
+        <mapping class="com.exampl.android.db.City"/>
+        <mapping class="com.exampl.android.db.County"/>
 
     </list>
 </litepal>
