@@ -3,6 +3,7 @@ package com.exampl.android;
 
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -14,10 +15,12 @@ import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.exampl.android.db.City;
 import com.exampl.android.db.County;
 import com.exampl.android.db.Province;
@@ -53,6 +56,7 @@ public class ChooseAreaFragment extends Fragment {
     private City selectedCity;
     private int currentLevel;
     private ProgressDialog progressDialog;
+    private ImageView chooseAreaImage;
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -60,8 +64,11 @@ public class ChooseAreaFragment extends Fragment {
         titleText = view.findViewById(R.id.title_text);
         backButton = view.findViewById(R.id.back_button);
         listView = view.findViewById(R.id.list_view);
-       adapter = new ArrayAdapter<>(getContext(),android.R.layout.simple_list_item_1,datalist);
+        chooseAreaImage = view.findViewById(R.id.choose_area_imageview);
+
+        adapter = new ArrayAdapter<>(getContext(), R.layout.simple_list_item,datalist);
        listView.setAdapter(adapter);
+        Glide.with(getActivity()).load(R.drawable.bg).into(chooseAreaImage);
         return view;
 
     }
@@ -70,18 +77,34 @@ public class ChooseAreaFragment extends Fragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         queeryProvinces();
+
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Log.d(TAG, "currentlevel"+currentLevel);
+
                 if(currentLevel == LEVEL_PROVINCE){
                     selectedProvince = provinceList.get(position);
-                    Log.d(TAG, "onItemClick: 1");
+
                     
                     queeryCities();
                 }else if(currentLevel == LEVEL_CITY){
                     selectedCity = cityList.get(position);
                     queeryCounties();
+                }else if (currentLevel == LEVEL_COUNTY){
+                    String weatherId = countyList.get(position).getWeatherId();
+                    if(getActivity() instanceof MainActivity){
+
+                    Intent intent = new Intent(getActivity(), WeatherActivity.class);
+                     intent.putExtra("weather_id", weatherId);
+                     startActivity(intent);
+                     getActivity().finish();}
+                     else if (getActivity() instanceof WeatherActivity){
+
+                        WeatherActivity activity = (WeatherActivity) getActivity();
+                        activity.swipRefreshLayout.setRefreshing(true);
+                        activity.requestWeather(weatherId);
+                        activity.drawLayout.closeDrawers();;
+                    }
                 }
             }
         });
@@ -150,7 +173,7 @@ public class ChooseAreaFragment extends Fragment {
         backButton.setVisibility(View.VISIBLE);
         cityList = DataSupport.where("provinceId=?",String.valueOf(selectedProvince.getId())).find(City.class);
         if(cityList.size()>0){
-            Log.d(TAG, "queeryCities: 2");
+
             datalist.clear();
             for(City city:cityList){
                 datalist.add(city.getCityName());
@@ -163,7 +186,7 @@ public class ChooseAreaFragment extends Fragment {
         }else {
             int provinceCode = selectedProvince.getProvinceCode();
             String adress = "http://guolin.tech/api/china/"+provinceCode;
-            Log.d(TAG, adress);
+
             queeryFromServer(adress,"city");
         }
     }
@@ -179,7 +202,7 @@ public class ChooseAreaFragment extends Fragment {
                 if("province".equals(type)){
                    result = Utility.handleProvinceReponse(responseText);
                 }else if ("city".equals(type)){
-                    Log.d(TAG, "onResponse: ");
+
                     result = Utility.handleCityReponse(responseText,selectedProvince.getId());
                 }else if ("county".equals(type)){
                     result = Utility.handleCountyReponse(responseText,selectedCity.getId());
